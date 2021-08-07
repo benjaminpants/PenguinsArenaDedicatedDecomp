@@ -4,6 +4,60 @@ $Game::EndGamePause = 3;
 function onServerCreated()
 {
 	$Game::StartTime = 0;
+	$Game::StartTime = $Sim::Time;
+	$Team[1] = new ScriptObject()
+	{
+		teamId = 1;
+		name = "Blue";
+		realPlayer = 0;
+		playerName = "";
+		client = "";
+		score = 0;
+		scoreLTGtotal = 0;
+		scoreLTG = 0;
+		numPlayers = 0;
+		Player[0] = "";
+	};
+	$Team[2] = new ScriptObject()
+	{
+		teamId = 2;
+		name = "Red";
+		realPlayer = 0;
+		playerName = "";
+		client = "";
+		score = 0;
+		scoreLTGtotal = 0;
+		scoreLTG = 0;
+		numPlayers = 0;
+		Player[0] = "";
+	};
+	$Team[3] = new ScriptObject()
+	{
+		teamId = 3;
+		name = "Yellow";
+		realPlayer = 0;
+		playerName = "";
+		client = "";
+		score = 0;
+		scoreLTGtotal = 0;
+		scoreLTG = 0;
+		numPlayers = 0;
+		Player[0] = "";
+	};
+	$Team[4] = new ScriptObject()
+	{
+		teamId = 4;
+		name = "Green";
+		realPlayer = 0;
+		playerName = "";
+		client = "";
+		score = 0;
+		scoreLTGtotal = 0;
+		scoreLTG = 0;
+		numPlayers = 0;
+		Player[0] = "";
+	};
+	$scores_already_reseted = 0;
 	exec("./audioProfiles.cs");
 	exec("./camera.cs");
 	exec("./markers.cs");
@@ -36,60 +90,6 @@ function onServerCreated()
 	exec("./bonus/BdN_explosive.cs");
 	exec("./objects.cs");
 	exec("./gameSolo.cs");
-	$Game::StartTime = $Sim::Time;
-	$Team[1] = new ScriptObject()
-	{
-		teamId = 1;
-		name = "Blue";
-		realPlayer = 0;
-		playerName = "";
-		client = "";
-		score = 0;
-		scoreLTGtotal = 0;
-		scoreLTG = 0;
-		numPlayers = 0;
-		Player = "";
-	};
-	$Team[2] = new ScriptObject()
-	{
-		teamId = 2;
-		name = "Red";
-		realPlayer = 0;
-		playerName = "";
-		client = "";
-		score = 0;
-		scoreLTGtotal = 0;
-		scoreLTG = 0;
-		numPlayers = 0;
-		Player = "";
-	};
-	$Team[3] = new ScriptObject()
-	{
-		teamId = 3;
-		name = "Yellow";
-		realPlayer = 0;
-		playerName = "";
-		client = "";
-		score = 0;
-		scoreLTGtotal = 0;
-		scoreLTG = 0;
-		numPlayers = 0;
-		Player = "";
-	};
-	$Team[4] = new ScriptObject()
-	{
-		teamId = 4;
-		name = "Green";
-		realPlayer = 0;
-		playerName = "";
-		client = "";
-		score = 0;
-		scoreLTGtotal = 0;
-		scoreLTG = 0;
-		numPlayers = 0;
-		Player = "";
-	};
-	$scores_already_reseted = 0;
 	
 }
 
@@ -226,12 +226,6 @@ function startGame()
 		{
 			%bonus_AI_level = 0;
 		}
-		%current_player_ID = 1;
-		while(%current_player_ID <= $nb_joueurs_par_team)
-		{
-			$Team[%current_team_ID].Player = %current_player_ID;
-			%current_player_ID = %current_player_ID + 1;
-		}
 		if ($Server::MissionType $= "Classic")
 		{
 			$Team[%current_team_ID].numPlayers = $nb_joueurs_par_team;
@@ -258,13 +252,20 @@ function startGame()
 			}
 		}
 		messageAll('MsgMembersTeamChanged', "", 1, $Team[%current_team_ID].numPlayers, 0);
+		if ($Server::MissionType $= "Classic" || $Server::MissionType $= "Modding")
+		{
+			for( %val = 0; %val < ($nb_joueurs_par_team + 1); %val++ ) 
+			{ 
+				$Team[%current_team_ID].Player[%this.id_in_team] = AIPlayer::spawn(%current_team_name @ %current_player_ID, pickSpawnPoint(%current_team_name, %current_player_ID), %current_team_ID, %current_player_ID, %bonus_AI_level);
+			}
+		}
 		%current_team_ID = %current_team_ID + 1;
+		
 	}
 	debugTeams();
 	$achivement_temp_duel = 0;
 	$Game::Running = 1;
 	waitingBeforeCountDown();
-	return AIPlayer::spawn(%current_team_name @ %current_player_ID, pickSpawnPoint(%current_team_name, %current_player_ID), %current_team_ID, %current_player_ID, %bonus_AI_level);
 }
 
 function waitingBeforeCountDown()
@@ -359,7 +360,7 @@ function countDown(%i)
 			%current_player_ID = 1;
 			while(%current_player_ID <= $nb_joueurs_par_team)
 			{
-				$Team[%current_team_ID].Player.schedule(getRandom(400, 1000), "doscan", $Team[%current_team_ID].Player);
+				$Team[%current_team_ID].Player[%current_player_ID].schedule(getRandom(400, 1000), "doscan", $Team[%current_team_ID].Player[%current_player_ID]);
 				%current_player_ID = %current_player_ID + 1;
 			}
 			%current_team_ID = %current_team_ID + 1;
@@ -505,7 +506,10 @@ function GameConnection::onClientEnterGame(%this)
 	commandToClient(%this, 'SyncClock', $Sim::Time - $Game::StartTime);
 	%this.ready = 0;
 	%this.score = 0;
-	%this.Camera = new Camera();
+	%this.Camera = new Camera()
+	{
+		dataBlock = "Observer";
+	};
 	MissionCleanup.add(%this.Camera);
 	%this.Camera.scopeToClient(%this);
 	if (%this.team_id)
@@ -591,10 +595,10 @@ function GameConnection::onClientLeaveGame(%this)
 	{
 		%this.Camera.delete();
 	}
-	if (isObject(%this.Player) && $Team[%this.team.teamId].Player)
+	if (isObject(%this.Player))
 	{
-		$Team[%this.team.teamId].Player.schedule(1000, "doscan", $Team[%this.team.teamId].Player);
-		$Team[%this.team.teamId].Player.unmountImage(7);
+		%this.Player.schedule(1000, "doscan", $Team[%this.team.teamId].Player);
+		%this.Player.unmountImage(7);
 	}
 	else
 	{
@@ -625,13 +629,9 @@ function GameConnection::onDeath(%this, %unused_var_1, %unused_var_2, %unused_va
 	}
 	else
 	{
-		if ($Team[%this.team.teamId].numPlayers != 0.0)
+		if ($Team[%this.team.teamId].numPlayers == 0.0)
 		{
-			$Team[%this.team.teamId].Player = 1;
-		}
-		else
-		{
-			$Team[%this.team.teamId].Player = 1;
+			$Team[%this.team.teamId].Player[%this.id_in_team] = "";
 		}
 	}
 	if (!$Game::Sessionfinished)
@@ -659,7 +659,7 @@ function GameConnection::ReincarnationMessage(%this)
 			commandToClient(%this, 'RespawnMessage');
 		}
 	}
-	return AIPlayer::spawn($Team[%this.team.teamId].name @ 1, pickSpawnPoint($Team[%this.team.teamId].name, 1), %this.team.teamId, 1, 0);
+	AIPlayer::spawn($Team[%this.team.teamId].name @ "1", pickSpawnPoint($Team[%this.team.teamId].name, 1), %this.team.teamId, 1, 0);
 }
 
 function GameConnection::spawnPlayer(%this)
@@ -682,7 +682,7 @@ function GameConnection::chooseAI(%this)
 	%i = 1;
 	while(%i <= $nb_joueurs_par_team)
 	{
-		%current_ai = $Team[%this.team.teamId].Player;
+		%current_ai = $Team[%this.team.teamId].Player[%i];
 		if (%current_ai && %current_ai.getState() $= "Move")
 		{
 			echo("== [" @ %this SPC "ai:" @ %this.isAIControlled() SPC "team:" @ %this.team.teamId SPC %this.getPlayerName() @ "] chooseAI - found available Penguin (" @ %i @ ")");
@@ -744,7 +744,11 @@ function GameConnection::createObserver(%this, %spawnPoint)
 	{
 		error("Attempting to create an angus ghost!");
 	}
-	%playerObserver = new Player();
+	%playerObserver = new Player(PlayerBodyObserver)
+	{
+		dataBlock = "PlayerBodyObserver";
+		client = %this;
+	};
 	%playerObserver.client = %this;
 	MissionCleanup.add(%playerObserver);
 	%playerObserver.setTransform(%spawnPoint);
