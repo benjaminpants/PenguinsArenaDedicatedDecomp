@@ -252,19 +252,12 @@ function startGame()
 			}
 		}
 		messageAll('MsgMembersTeamChanged', "", 1, $Team[%current_team_ID].numPlayers, 0);
-		if ($Server::MissionType $= "Classic" || $Server::MissionType $= "Modding")
-		{
-			for( %val = 0; %val < ($nb_joueurs_par_team + 1); %val++ ) 
-			{ 
-				$Team[%current_team_ID].Player[%this.id_in_team] = AIPlayer::spawn(%current_team_name @ %current_player_ID, pickSpawnPoint(%current_team_name, %current_player_ID), %current_team_ID, %current_player_ID, %bonus_AI_level);
-			}
-		}
 		%current_team_ID = %current_team_ID + 1;
-		
 	}
 	debugTeams();
 	$achivement_temp_duel = 0;
 	$Game::Running = 1;
+	$Team[%current_team_ID].Player[%this.id_in_team] = AIPlayer::spawn(%current_team_name @ %current_player_ID, pickSpawnPoint(%current_team_name, %current_player_ID), %current_team_ID, %current_player_ID, %bonus_AI_level);
 	waitingBeforeCountDown();
 }
 
