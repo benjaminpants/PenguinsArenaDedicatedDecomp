@@ -1,3 +1,7 @@
+[This project has been moved! Click here for the new page!](https://github.com/benjaminpants/PenguinsArenaDecompile)
+
+# ORIGINAL README.md
+
 its not c# despite what github may say
 
 a wip decompile of the penguins arena dedicated server
